@@ -165,11 +165,12 @@ public class FILE_PING extends Discovery {
         if(!dir.exists())
             dir.mkdir();
 
-        if(log.isDebugEnabled())
-            log.debug("reading all : " + clustername);
+        log.debug("reading all from %s : %s", dir,clustername);
+
         File[] files=dir.listFiles(filter);
         if(files != null) {
             for(File file: files) {
+                log.debug("Trying out %s", file);
                 PingData data=null;
                 //implementing a simple spin lock doing a few attempts to read the file
                 //this is done since the file may be written in concurrency and may therefore not be readable
@@ -177,10 +178,13 @@ public class FILE_PING extends Discovery {
                     data=null;
                     if(file.exists())
                         data=readFile(file);
-                    if(data != null)
+                    if(data != null) {
+                        log.debug("Read from %s produced %s", file, data);
                         break;
-                    else
+                    } else {
+                        log.debug("Failed to read from %s. Retrying %dth", file, i);
                         Util.sleep(100);
+                    }
                 }
 
                 if(data == null) {
