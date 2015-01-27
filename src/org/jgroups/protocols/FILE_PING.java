@@ -73,8 +73,10 @@ public class FILE_PING extends Discovery {
         writeToFile(data, cluster_name); // write my own data to file
 
         // If we don't find any files, return immediately
-        if(existing_mbrs.isEmpty())
+        if(existing_mbrs.isEmpty()) {
+            log.debug("there is not any file for cluster %s", cluster_name);
             return Collections.emptyList();
+        }
 
         Set<PhysicalAddress> retval=new HashSet<PhysicalAddress>();
 
@@ -86,6 +88,7 @@ public class FILE_PING extends Discovery {
                 if(dest == null)
                     continue;
                 retval.add(dest);
+                log.debug("adding Physical address %s", dest);
             }
         }
 
@@ -109,9 +112,11 @@ public class FILE_PING extends Discovery {
         if(root_dir.exists()) {
             if(!root_dir.isDirectory())
                 throw new IllegalArgumentException("location " + root_dir.getPath() + " is not a directory");
+            log.debug("Root directory %s already exist", root_dir);
         }
         else {
             root_dir.mkdirs();
+            log.debug("Creating root directory %s", root_dir);
         }
         if(!root_dir.exists())
             throw new IllegalArgumentException("location " + root_dir.getPath() + " could not be accessed");
@@ -146,10 +151,9 @@ public class FILE_PING extends Discovery {
         if(!dir.exists())
             return;
 
-        if(log.isDebugEnabled()) {
-        	log.debug("remove : "+clustername);
-        }
-        
+        log.debug("remove : %s ", clustername);
+
+
         String filename=addr instanceof UUID? ((UUID)addr).toStringLong() : addr.toString();
         File file=new File(dir, filename + SUFFIX);
         deleteFile(file);
@@ -242,8 +246,7 @@ public class FILE_PING extends Discovery {
             src_ch.transferTo(0,src_ch.size(),dest_ch);
             src_ch.close();
             dest_ch.close();
-            if(log.isTraceEnabled())
-                log.trace("Moved: " + tmpFile.getName() + "->" + destination.getName());
+            log.trace("Moved: %s -> %s", tmpFile.getName(), destination.getName());
         }
         catch(IOException ioe) {
             log.error("attempt to move failed at " + clustername + " : " + tmpFile.getName() + "->" + destination.getName(),ioe);
@@ -261,7 +264,7 @@ public class FILE_PING extends Discovery {
             writeToFile(data, group_addr);
         }
     }
-    
+
     protected static String addressAsString(Address address) {
         if(address == null)
             return "";
@@ -278,14 +281,12 @@ public class FILE_PING extends Discovery {
      */
     private boolean deleteFile(File file) {
         boolean result = true;
-        if(log.isTraceEnabled())
-            log.trace("Attempting to delete file : "+file.getAbsolutePath());
+        log.trace("Attempting to delete file : %s", file.getAbsolutePath());
 
         if(file != null && file.exists()) {
             try {
                 result=file.delete();
-                if(log.isTraceEnabled())
-                    log.trace("Deleted file result: "+file.getAbsolutePath() +" : "+result);
+                log.trace("Deleted file result: %s : %s", file.getAbsolutePath(), result);
             }
             catch(Throwable e) {
                 log.error("Failed to delete file: " + file.getAbsolutePath(), e);
@@ -293,7 +294,7 @@ public class FILE_PING extends Discovery {
         }
         return result;
     }
-       
+
 
     /**
      * Writes the data to a temporary file.<br>
@@ -304,24 +305,23 @@ public class FILE_PING extends Discovery {
      */
     private File writeToTempFile(File dir, PingData data) {
         DataOutputStream out=null;
-               
+
         String filename=addressAsString(local_addr);
         File file=new File(dir, filename + ".tmp");
-                
+
         try {
             out=new DataOutputStream(new FileOutputStream(file));
             data.writeTo(out);
             Util.close(out);
-            if(log.isTraceEnabled())
-                log.trace("Stored temporary file: "+file.getAbsolutePath());            	
+            log.trace("Stored temporary file: %s", file.getAbsolutePath());
         }
         catch(Exception e) {
             Util.close(out);
-        	log.error("Failed to write temporary file: "+file.getAbsolutePath(), e);
-        	deleteFile(file);
-        	return null;
+            log.error("Failed to write temporary file: "+file.getAbsolutePath(), e);
+            deleteFile(file);
+            return null;
         }
-		return file;
+        return file;
     }
 
 
